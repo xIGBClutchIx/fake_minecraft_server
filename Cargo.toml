@@ -1,0 +1,11 @@
+[package]
+name = "fake_minecraft_server"
+version = "0.1.0"
+authors = ["Cameron Weaver (Clutch) <lockerzmodding@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+pad = "0.1.6"
+chrono = "0.4.11"
+ansi_term = "0.12.1"
+log = "0.4.8"
