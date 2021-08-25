@@ -1,26 +1,12 @@
-use crate::packets::*;
 use crate::extensions::CursorExt;
-
-use lazy_static::lazy_static;
+use crate::packets::incoming::handler::PacketIncomingHandler;
 
 use std::{
-    collections::HashMap,
     io::{Cursor, Read},
     net::{SocketAddr, SocketAddrV4, TcpListener, TcpStream},
     sync::{Arc, Mutex},
     thread::spawn,
 };
-
-// TODO: Switch to per user packet system. I wanted to make this work and I did and it is terrible. PERFECT!
-lazy_static! {
-    static ref PACKETS: HashMap<i32, Box<dyn Packet + Sync>> = {
-        let mut m = HashMap::new();
-
-        m.insert(0x00, Box::new(Packet0) as Box<dyn Packet + Sync + 'static>);
-
-        m
-    };
-}
 
 pub struct SocketServer {
     address: SocketAddrV4,
@@ -41,7 +27,7 @@ impl SocketServer {
 
     pub fn listen(&self) {
         let listener = TcpListener::bind(self.address).unwrap();
-        info!("Listening : {}", self.address);
+        info!("Listening: {}", self.address);
 
         for socket in listener.incoming() {
             match socket {
@@ -87,8 +73,7 @@ impl SocketClient {
                             let _ = buffer.remove(0);
                         }
                         buffer.resize(length as usize, 0);
-                        trace!("{}: {:?} > {:?}", self.address, packet_id, buffer);
-                        PACKETS.get(&packet_id).unwrap().handle_data(self, &mut Cursor::new(buffer));
+                        PacketIncomingHandler::handle_data(self, packet_id, buffer);
                     }
                 }
                 Err(e) => error!("failed to find length of data: {}", e),

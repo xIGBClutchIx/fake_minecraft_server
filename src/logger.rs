@@ -6,29 +6,29 @@ use pad::PadStr;
 struct Logger;
 
 impl log::Log for Logger {
+    fn enabled(&self, _: &Metadata) -> bool {true}
+
     fn log(&self, record: &Record) {
-        let left_bracket =  Fixed(8).paint("[");
         let time_stamp = Cyan.paint(format!("{}", Local::now().format("%H:%M:%S:%3f")));
-        let right_bracket = Fixed(8).paint("]");
 
-        let level = format!("{}", record.level());
-
-        let log_level = match record.level() {
-            Level::Trace => Purple.paint(level),
-            Level::Debug => Blue.paint(level),
-            Level::Info => Green.paint(level.pad_to_width(5)),
-            Level::Warn => Yellow.paint(level.pad_to_width(5)),
-            Level::Error => Red.paint(level)
+        let log_color = match record.level() {
+            Level::Trace => Purple,
+            Level::Debug => Blue,
+            Level::Info => Green,
+            Level::Warn => Yellow,
+            Level::Error => Red
         };
 
-        let divider = Fixed(8).paint(">");
+        let unicode_arrow = '\u{e0b0}'.to_string();
+        let beginning_arrow = Black.on(log_color).paint(&unicode_arrow);
+        let level = Black.on(log_color).paint(format!(" {} ", record.level().as_str().pad_to_width(5)));
+        let color_arrow = log_color.paint(&unicode_arrow);
+
         let message = White.paint(format!("{}", record.args()));
 
-        println!("{}{}{} {} {} {}", left_bracket, time_stamp, right_bracket, log_level, divider, message);
+        println!("{} {}{}{} {}", time_stamp, beginning_arrow, level, color_arrow, message);
     }
-
     fn flush(&self) {}
-    fn enabled(&self, _: &Metadata) -> bool {true}
 }
 
 pub fn create_logger() {

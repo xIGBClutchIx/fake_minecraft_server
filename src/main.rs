@@ -2,8 +2,8 @@
 
 mod extensions;
 mod logger;
-mod packets;
 mod socket;
+mod packets;
 
 use std::net::{Ipv4Addr, SocketAddrV4};
 use socket::*;
