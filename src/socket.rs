@@ -29,8 +29,8 @@ impl SocketServer {
         let listener = TcpListener::bind(self.address).unwrap();
         info!("Listening: {}", self.address);
 
-        for socket in listener.incoming() {
-            match socket {
+        for stream in listener.incoming() {
+            match stream {
                 Ok(socket) => self.handle_conn(socket),
                 Err(e) => error!("failed to handle stream: {}", e),
             };
