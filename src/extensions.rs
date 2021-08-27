@@ -7,6 +7,7 @@ pub trait CursorExt {
     fn read_string(&mut self) -> String;
 
     fn read_short(&mut self) -> u16;
+    fn read_long(&mut self) -> i64;
 
     fn read_varint(&mut self) -> i32;
 
@@ -35,24 +36,26 @@ impl CursorExt for Cursor<Vec<u8>> {
         }
     }
 
-    fn read_varint(&mut self) -> i32 {
-        let mut num_read = 0;
-        let mut result = 0;
-        loop {
-            let t_byte = self.length_read(1);
-            let read = t_byte.first().expect("expect varint first byte");
+    fn read_long(&mut self) -> i64 {
+        let long = self.read_i64::<BigEndian>();
 
-            let value = read & 0b01111111;
-            result |= i32::from(value) << (7 * num_read);
-            num_read = num_read + 1;
-            if num_read > 5 {
+        return match long {
+            Ok(v) => v,
+            Err(_) => 0
+        }
+    }
+
+    fn read_varint(&mut self) -> i32 {
+        let mut buf = [0];
+        let mut ans = 0;
+        for i in 0..4 {
+            self.read_exact(&mut buf).expect("expect varint first byte");
+            ans |= ((buf[0] & 0b0111_1111) as i32) << 7 * i;
+            if buf[0] & 0b1000_0000 == 0 {
                 break;
             }
-            if read & 0b10000000 == 0 { 
-                break;
-            }
-        } 
-        return result;
+        }
+        return ans;
     }
 
     fn length_read(&mut self, length: i32) -> Vec<u8> {
@@ -61,5 +64,29 @@ impl CursorExt for Cursor<Vec<u8>> {
             error!("{:?}", e);
         }
         return buf;
+    }
+}
+
+pub trait Vec8Ext {
+    fn add_varint(&mut self, value: i32);
+}
+
+impl Vec8Ext for Vec<u8> {
+
+    fn add_varint(&mut self, mut value: i32) {
+        loop {
+            let mut temp: u8 = (value & 0b01111111) as u8;
+
+            value >>= 7;
+            if value != 0 {
+                temp |= 0b10000000;
+            }
+
+            self.push(temp);
+
+            if value == 0 {
+                return;
+            }
+        }
     }
 }

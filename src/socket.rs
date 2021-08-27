@@ -1,4 +1,4 @@
-use crate::extensions::CursorExt;
+use crate::extensions::{CursorExt, Vec8Ext};
 use crate::packets::incoming::handler::PacketIncomingHandler;
 
 use std::{
@@ -6,6 +6,7 @@ use std::{
     net::{SocketAddr, SocketAddrV4, TcpListener, TcpStream},
     thread::spawn,
 };
+use std::io::Write;
 
 pub struct SocketServer {
     address: SocketAddrV4,
@@ -38,7 +39,7 @@ impl SocketServer {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub enum ConnectionState {
     UNKNOWN,
     STATUS,
@@ -73,7 +74,39 @@ impl SocketClient {
         }
     }
 
-    // Note: No negatives due to it being a u8. Will this matter or does it convert correctly?
+    pub fn send_i64(&mut self, packet_id: i32, packet_name: &str, data: i64) {
+        self.send_data(packet_id, packet_name, data.to_ne_bytes().to_vec());
+    }
+
+    pub fn send_string(&mut self, packet_id: i32, packet_name: &str, string: String) {
+        let string_data = string.into_bytes();
+        let mut data: Vec<u8> = Vec::new();
+        // String Size
+        data.add_varint(string_data.len() as i32);
+        // String and size
+        let end_data = [data, string_data].concat();
+        self.send_data(packet_id, packet_name, end_data);
+    }
+
+    pub fn send_data(&mut self, packet_id: i32, packet_name: &str, response: Vec<u8>) {
+        // Packet ID + String Size + Data
+        let mut data: Vec<u8> = Vec::new();
+        // Packet ID
+        data.add_varint(packet_id);
+        // Data
+        data = [data, response].concat();
+
+        // Full packet size and packet
+        let mut end_data: Vec<u8> = Vec::new();
+        end_data.add_varint(data.len() as i32);
+        end_data = [end_data, data].concat();
+
+        match self.socket.write_all(end_data.as_mut()) {
+            Ok(_) => info!("{:?} < {}", self.address, packet_name),
+            Err(e) => error!("failed to send data: {}", e)
+        }
+    }
+
     pub fn handle(&mut self) {
         loop {
             let mut buffer = vec![0; 2097050];
