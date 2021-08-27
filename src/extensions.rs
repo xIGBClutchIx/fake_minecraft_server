@@ -1,9 +1,12 @@
 use std::io::prelude::*;
 use std::io::Cursor;
 use std::str;
+use byteorder::{BigEndian, ReadBytesExt};
 
 pub trait CursorExt {
     fn read_string(&mut self) -> String;
+
+    fn read_short(&mut self) -> u16;
 
     fn read_varint(&mut self) -> i32;
 
@@ -19,7 +22,16 @@ impl CursorExt for Cursor<Vec<u8>> {
 
         return match string {
             Ok(v) => v.to_string(),
-            Err(_) => format!(""),
+            Err(_) => format!("Error reading string"),
+        }
+    }
+
+    fn read_short(&mut self) -> u16 {
+        let short = self.read_u16::<BigEndian>();
+
+        return match short {
+            Ok(v) => v,
+            Err(_) => 0
         }
     }
 

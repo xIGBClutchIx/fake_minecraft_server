@@ -28,6 +28,7 @@ impl log::Log for Logger {
 
         println!("{}{}{}{}{} {}", beginning_arrow, time_stamp, separator_arrow, level, end_level_arrow, record.args());
     }
+
     fn flush(&self) {}
 }
 
