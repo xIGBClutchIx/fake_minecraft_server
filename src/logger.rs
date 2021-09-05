@@ -1,5 +1,5 @@
-use chrono::prelude::{Local};
 use ansi_term::Colour::{*};
+use chrono::prelude::Local;
 use log::{Record, Metadata, Level, LevelFilter};
 use pad::PadStr;
 

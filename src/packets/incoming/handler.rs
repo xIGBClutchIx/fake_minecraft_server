@@ -2,7 +2,6 @@ use crate::packets::incoming::packets::*;
 use crate::socket::{SocketClient, ConnectionState};
 
 use phf::phf_map;
-
 use std::io::Cursor;
 
 pub trait PacketIncoming {

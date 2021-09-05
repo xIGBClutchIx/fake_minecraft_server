@@ -1,17 +1,19 @@
 use crate::extensions::{CursorExt, Vec8Ext};
 use crate::packets::incoming::handler::PacketIncomingHandler;
 
+use serde_json::json;
+
 use std::{
-    io::{Cursor, Read},
+    io::{Cursor, Read, Write},
     net::{SocketAddr, SocketAddrV4, TcpListener, TcpStream},
     thread::spawn,
 };
-use std::io::Write;
 
 pub struct SocketServer {
     address: SocketAddrV4,
 }
 
+// TODO SWITCH TO TOKIO AND DETECT CLOSE/DISCONNECT
 impl SocketServer {
     pub fn new(address: SocketAddrV4) -> Self {
         Self { address }
@@ -55,6 +57,30 @@ impl ConnectionState {
             3 => ConnectionState::PLAY,
             _ => ConnectionState::UNKNOWN
         }
+    }
+}
+
+pub struct ServerStatus;
+
+impl ServerStatus {
+    pub fn get_status() -> String {
+         return json!({
+            "version": {
+                "name": "1.17.1",
+                "protocol": 756
+            },
+            "players": {
+                "max": 64,
+                "online": 1,
+                "sample": [{
+                    "name": "Clutch",
+                    "id": "2a8e267f-88d7-4175-8825-00e81a680076"
+                }]
+            },
+            "description": {
+                "text": "A Fake Minecraft Server"
+            }
+        }).to_string();
     }
 }
 
@@ -105,6 +131,7 @@ impl SocketClient {
             Ok(_) => info!("{:?} < {}", self.address, packet_name),
             Err(e) => error!("failed to send data: {}", e)
         }
+        self.socket.flush().unwrap();
     }
 
     pub fn handle(&mut self) {

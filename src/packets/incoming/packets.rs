@@ -2,7 +2,6 @@ use crate::extensions::*;
 use crate::packets::incoming::handler::PacketIncoming;
 use crate::socket::*;
 
-use serde_json::json;
 use std::io::Cursor;
 
 pub struct Packet0x00;
@@ -22,34 +21,11 @@ impl PacketIncoming for Packet0x00 {
         debug!("{}: (Handshake) {} > {}", socket.address, "Port", port);
         debug!("{}: (Handshake) {} > {:?}", socket.address, "State", state);
         socket.state = state;
+        socket.send_string(0x00i32, "Handshake Response", ServerStatus::get_status());
+    }
 
-        // TODO Better configuration
-        if socket.state == ConnectionState::STATUS {
-            let response = json!({
-                "version": {
-                    "name": "1.17.1",
-                    "protocol": 756
-                },
-                "players": {
-                    "max": 64,
-                    "online": 1,
-                    "sample": [
-                        {
-                            "name": "Clutch",
-                            "id": "2a8e267f-88d7-4175-8825-00e81a680076"
-                        }
-                    ]
-                },
-                "description": {
-                    "text": "A Fake Minecraft Server"
-                },
-                "favicon": "data:image/png;base64,<data>"
-            }).to_string();
-
-            socket.send_string(0x00i32, "Status Response", response);
-        } else if socket.state == ConnectionState::LOGIN {
-            // TODO do login process
-        }
+    fn handle_status(&self, socket: &mut SocketClient, _data: &mut Cursor<Vec<u8>>) {
+        socket.send_string(0x00i32, "Status Response", ServerStatus::get_status());
     }
 }
 
