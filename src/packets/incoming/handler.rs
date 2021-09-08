@@ -1,14 +1,16 @@
 use crate::packets::incoming::packets::*;
 use crate::socket::{SocketClient, ConnectionState};
 
+use async_trait::async_trait;
 use phf::phf_map;
 use std::io::Cursor;
 
-pub trait PacketIncoming {
-    fn handle_unknown(&self, _socket: &mut SocketClient, _data: &mut Cursor<Vec<u8>>) {}
-    fn handle_status(&self, _socket: &mut SocketClient, _data: &mut Cursor<Vec<u8>>) {}
-    fn handle_play(&self, _socket: &mut SocketClient, _data: &mut Cursor<Vec<u8>>) {}
-    fn handle_login(&self, _socket: &mut SocketClient, _data: &mut Cursor<Vec<u8>>) {}
+#[async_trait]
+pub trait PacketIncoming: Sync {
+    async fn handle_unknown(&self, _socket: &mut SocketClient, _data: &mut Cursor<Vec<u8>>) {}
+    async fn handle_status(&self, _socket: &mut SocketClient, _data: &mut Cursor<Vec<u8>>) {}
+    async fn handle_play(&self, _socket: &mut SocketClient, _data: &mut Cursor<Vec<u8>>) {}
+    async fn handle_login(&self, _socket: &mut SocketClient, _data: &mut Cursor<Vec<u8>>) {}
 }
 
 const PACKETS: phf::Map<i32, &dyn PacketIncoming> = phf_map! {
@@ -19,17 +21,18 @@ const PACKETS: phf::Map<i32, &dyn PacketIncoming> = phf_map! {
 pub struct PacketIncomingHandler;
 
 impl PacketIncomingHandler {
-    pub fn handle_data(client: &mut SocketClient, packet_id: i32, buffer: Vec<u8>) {
+
+    pub async fn handle_data(client: &mut SocketClient, packet_id: i32, buffer: Vec<u8>) {
         trace!("{}: {:#04x} > {:?}", client.address, packet_id, buffer);
 
         match PACKETS.get(&packet_id) {
             Some(packet) => {
                 let cursor = &mut Cursor::new(buffer);
                 match client.state {
-                    ConnectionState::STATUS => packet.handle_status(client, cursor),
-                    ConnectionState::PLAY => packet.handle_play(client, cursor),
-                    ConnectionState::LOGIN => packet.handle_login(client, cursor),
-                    _ => packet.handle_unknown(client, cursor)
+                    ConnectionState::STATUS => packet.handle_status(client, cursor).await,
+                    ConnectionState::PLAY => packet.handle_play(client, cursor).await,
+                    ConnectionState::LOGIN => packet.handle_login(client, cursor).await,
+                    _ => packet.handle_unknown(client, cursor).await,
                 }
             },
             None => error!("{}: {:#04x} > Unknown", client.address, packet_id)

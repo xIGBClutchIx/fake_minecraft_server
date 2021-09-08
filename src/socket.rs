@@ -3,11 +3,9 @@ use crate::packets::incoming::handler::PacketIncomingHandler;
 
 use serde_json::json;
 
-use std::{
-    io::{Cursor, Read, Write},
-    net::{SocketAddr, SocketAddrV4, TcpListener, TcpStream},
-    thread::spawn,
-};
+use std::{io::Cursor, net::{SocketAddr, SocketAddrV4}, };
+use tokio::{io::{AsyncWriteExt, AsyncReadExt}, net::{TcpStream, TcpListener}};
+use tokio::io::Interest;
 
 pub struct SocketServer {
     address: SocketAddrV4,
@@ -19,25 +17,18 @@ impl SocketServer {
         Self { address }
     }
 
-    fn handle_conn(&self, socket: TcpStream) {
-        spawn(move || {
-            let mut client = SocketClient::new(socket);
-            debug!("{}: Connected", client.address);
-            client.handle();
-        });
-    }
-
-    pub fn listen(&self) {
-        let listener = TcpListener::bind(self.address).unwrap();
+    pub async fn listen(&self) {
+        let listener = TcpListener::bind(self.address).await.unwrap();
         info!("{}: Server started!", self.address);
 
-        for stream in listener.incoming() {
-            match stream {
-                Ok(socket) => self.handle_conn(socket),
-                Err(e) => error!("failed to handle stream: {}", e),
-            };
+        loop {
+            let (socket, address) = listener.accept().await.unwrap();
+            tokio::spawn(async move {
+                let mut client = SocketClient::new(address, socket);
+                debug!("{}: Connected", address);
+                client.handle().await;
+            });
         }
-        drop(listener);
     }
 }
 
@@ -92,29 +83,29 @@ pub struct SocketClient {
 
 impl SocketClient {
 
-    pub fn new(socket: TcpStream) -> Self {
+    pub fn new(address: SocketAddr, socket: TcpStream) -> Self {
         Self {
-            address: socket.peer_addr().expect("failed to get address"),
+            address,
             socket,
             state: ConnectionState::UNKNOWN
         }
     }
 
-    pub fn send_i64(&mut self, packet_id: i32, packet_name: &str, data: i64) {
-        self.send_data(packet_id, packet_name, data.to_ne_bytes().to_vec());
+    pub async fn send_i64(&mut self, packet_id: i32, packet_name: &str, data: i64) {
+        self.send_data(packet_id, packet_name, data.to_ne_bytes().to_vec()).await;
     }
 
-    pub fn send_string(&mut self, packet_id: i32, packet_name: &str, string: String) {
+    pub async fn send_string(&mut self, packet_id: i32, packet_name: &str, string: String) {
         let string_data = string.into_bytes();
         let mut data: Vec<u8> = Vec::new();
         // String Size
         data.add_varint(string_data.len() as i32);
         // String and size
         let end_data = [data, string_data].concat();
-        self.send_data(packet_id, packet_name, end_data);
+        self.send_data(packet_id, packet_name, end_data).await;
     }
 
-    pub fn send_data(&mut self, packet_id: i32, packet_name: &str, response: Vec<u8>) {
+    pub async fn send_data(&mut self, packet_id: i32, packet_name: &str, response: Vec<u8>) {
         // Packet ID + String Size + Data
         let mut data: Vec<u8> = Vec::new();
         // Packet ID
@@ -127,35 +118,38 @@ impl SocketClient {
         end_data.add_varint(data.len() as i32);
         end_data = [end_data, data].concat();
 
-        match self.socket.write_all(end_data.as_mut()) {
-            Ok(_) => info!("{:?} < {}", self.address, packet_name),
-            Err(e) => error!("failed to send data: {}", e)
+        let write = self.socket.ready(Interest::WRITABLE).await.unwrap();
+        if write.is_write_closed() {
+            return
         }
-        self.socket.flush().unwrap();
+
+        self.socket.write_all(end_data.as_mut()).await.unwrap();
+        info!("{:?} < {}", self.address, packet_name);
     }
 
-    pub fn handle(&mut self) {
+    pub async fn handle(&mut self) {
         loop {
             let mut buffer = vec![0; 2097050];
-            match self.socket.read(&mut buffer) {
-                Ok(length) => {
-                    buffer.resize(length, 0);
-                    if buffer.len() > 0 {
-                        let mut data = Cursor::new(buffer.clone());
-                        let length = data.read_varint();
-                        let packet_id = data.read_varint();
+            let ready = self.socket.ready(Interest::READABLE).await.unwrap();
+            if ready.is_read_closed() {
+                break;
+            }
+            let length = self.socket.read(&mut buffer[..]).await.unwrap();
 
-                        if buffer.len() > 0 {
-                            let _ = buffer.remove(0);
-                        }
-                        if buffer.len() > 0 {
-                            let _ = buffer.remove(0);
-                        }
-                        buffer.resize(length as usize, 0);
-                        PacketIncomingHandler::handle_data(self, packet_id, buffer);
-                    }
+            buffer.resize(length, 0);
+            if buffer.len() > 0 {
+                let mut data = Cursor::new(buffer.clone());
+                let length = data.read_varint();
+                let packet_id = data.read_varint();
+
+                if buffer.len() > 0 {
+                    let _ = buffer.remove(0);
                 }
-                Err(e) => error!("failed to find length of data: {}", e),
+                if buffer.len() > 0 {
+                    let _ = buffer.remove(0);
+                }
+                buffer.resize(length as usize, 0);
+                PacketIncomingHandler::handle_data(self, packet_id, buffer).await;
             }
         }
     }

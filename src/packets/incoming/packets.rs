@@ -2,14 +2,17 @@ use crate::extensions::*;
 use crate::packets::incoming::handler::PacketIncoming;
 use crate::socket::*;
 
+use async_trait::async_trait;
+
 use std::io::Cursor;
 
 pub struct Packet0x00;
 pub struct Packet0x01;
 
+#[async_trait]
 impl PacketIncoming for Packet0x00 {
 
-    fn handle_unknown(&self, socket: &mut SocketClient, data: &mut Cursor<Vec<u8>>) {
+    async fn handle_unknown(&self, socket: &mut SocketClient, data: &mut Cursor<Vec<u8>>) {
         let protocol = data.read_varint();
         let server_address = data.read_string();
         let port = data.read_short();
@@ -21,20 +24,21 @@ impl PacketIncoming for Packet0x00 {
         debug!("{}: (Handshake) {} > {}", socket.address, "Port", port);
         debug!("{}: (Handshake) {} > {:?}", socket.address, "State", state);
         socket.state = state;
-        socket.send_string(0x00i32, "Handshake Response", ServerStatus::get_status());
+        socket.send_string(0x00i32, "Handshake Response", ServerStatus::get_status()).await;
     }
 
-    fn handle_status(&self, socket: &mut SocketClient, _data: &mut Cursor<Vec<u8>>) {
-        socket.send_string(0x00i32, "Status Response", ServerStatus::get_status());
+    async fn handle_status(&self, socket: &mut SocketClient, _data: &mut Cursor<Vec<u8>>) {
+        socket.send_string(0x00i32, "Status Response", ServerStatus::get_status()).await;
     }
 }
 
+#[async_trait]
 impl PacketIncoming for Packet0x01 {
 
-    fn handle_status(&self, socket: &mut SocketClient, data: &mut Cursor<Vec<u8>>) {
+    async fn handle_status(&self, socket: &mut SocketClient, data: &mut Cursor<Vec<u8>>) {
         let payload = data.read_long();
         debug!("{}: (Ping) {} > {:?}", socket.address, "Payload", payload);
 
-        socket.send_i64(0x01i32, "Ping Response", payload);
+        socket.send_i64(0x01i32, "Ping Response", payload).await;
     }
 }

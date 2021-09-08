@@ -5,10 +5,20 @@ authors = ["Cameron Weaver (Clutch) <lockerzmodding@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+# Logger dependencies
 pad = "0.1.6"
 chrono = "0.4.19"
 ansi_term = "0.12.1"
 log = "0.4.14"
+# Signal terminate dependency
+signal-hook = "0.3.4"
+# Async traits dependency
+async-trait = "0.1.51"
+# Tokio tcp dependency
+tokio = { version = "1", features = ["full"] }
+# Static hashmap dependency
 phf = { version = "0.10.0", features = ["macros"] }
+# Byte dependency
 byteorder = "1"
+# Json dependency
 serde_json = "1.0"

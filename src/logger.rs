@@ -26,15 +26,18 @@ impl log::Log for Logger {
         let separator_arrow = Blue.on(log_color).paint(&unicode_arrow);
         let end_level_arrow = log_color.paint(&unicode_arrow);
 
-        println!("{}{}{}{}{} {}", beginning_arrow, time_stamp, separator_arrow, level, end_level_arrow, record.args());
+        // Hack hide tokio trace
+        if !record.args().to_string().contains("registering event source") {
+            println!("{}{}{}{}{} {}", beginning_arrow, time_stamp, separator_arrow, level, end_level_arrow, record.args());
+        }
     }
 
     fn flush(&self) {}
 }
 
-pub fn create_logger() {
+pub fn create_logger(level: LevelFilter) {
     enable_windows_color();
-    let _ = log::set_logger(&Logger).map(|()| log::set_max_level(LevelFilter::Trace));
+    let _ = log::set_logger(&Logger).map(|()| log::set_max_level(level));
 }
 
 #[cfg(windows)]
