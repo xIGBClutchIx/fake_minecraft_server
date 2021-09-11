@@ -1,3 +1,4 @@
+#![deny(unused_must_use)]
 #[macro_use] extern crate log;
 
 mod extensions;
@@ -5,13 +6,11 @@ mod logger;
 mod socket;
 mod packets;
 
+use crate::socket::SocketServer;
+
 use log::LevelFilter;
 use signal_hook::{consts::TERM_SIGNALS, flag};
-use std::{
-    net::{Ipv4Addr, SocketAddrV4},
-    sync::{Arc, atomic::{AtomicBool, Ordering}},
-};
-use socket::*;
+use std::{net::{Ipv4Addr, SocketAddrV4}, sync::{Arc, atomic::{AtomicBool, Ordering}}};
 
 #[tokio::main]
 async fn main() {

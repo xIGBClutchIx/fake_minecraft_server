@@ -1,17 +1,15 @@
 use crate::extensions::{CursorExt, Vec8Ext};
-use crate::packets::incoming::handler::PacketIncomingHandler;
+
+use crate::packets::packets::handle_data;
 
 use serde_json::json;
-
-use std::{io::Cursor, net::{SocketAddr, SocketAddrV4}, };
-use tokio::{io::{AsyncWriteExt, AsyncReadExt}, net::{TcpStream, TcpListener}};
-use tokio::io::Interest;
+use std::{io::Cursor, net::{SocketAddr, SocketAddrV4}};
+use tokio::{io::{AsyncWriteExt, AsyncReadExt, Interest}, net::{TcpStream, TcpListener}};
 
 pub struct SocketServer {
     address: SocketAddrV4,
 }
 
-// TODO SWITCH TO TOKIO AND DETECT CLOSE/DISCONNECT
 impl SocketServer {
     pub fn new(address: SocketAddrV4) -> Self {
         Self { address }
@@ -32,21 +30,27 @@ impl SocketServer {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub enum ConnectionState {
-    UNKNOWN,
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Direction {
+    SERVERBOUND,
+    CLIENTBOUND,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum State {
+    HANDSHAKE,
     STATUS,
     LOGIN,
     PLAY
 }
 
-impl ConnectionState {
-    pub fn from_u16(value: i32) -> ConnectionState {
+impl State {
+    pub fn from_u16(value: i32) -> State {
         match value {
-            1 => ConnectionState::STATUS,
-            2 => ConnectionState::LOGIN,
-            3 => ConnectionState::PLAY,
-            _ => ConnectionState::UNKNOWN
+            1 => State::STATUS,
+            2 => State::LOGIN,
+            3 => State::PLAY,
+            _ => State::HANDSHAKE
         }
     }
 }
@@ -54,7 +58,7 @@ impl ConnectionState {
 pub struct ServerStatus;
 
 impl ServerStatus {
-    pub fn get_status() -> String {
+    pub fn status() -> String {
          return json!({
             "version": {
                 "name": "1.17.1",
@@ -78,7 +82,7 @@ impl ServerStatus {
 pub struct SocketClient {
     pub address: SocketAddr,
     socket: TcpStream,
-    pub state: ConnectionState
+    pub state: State
 }
 
 impl SocketClient {
@@ -87,7 +91,7 @@ impl SocketClient {
         Self {
             address,
             socket,
-            state: ConnectionState::UNKNOWN
+            state: State::HANDSHAKE
         }
     }
 
@@ -130,26 +134,31 @@ impl SocketClient {
     pub async fn handle(&mut self) {
         loop {
             let mut buffer = vec![0; 2097050];
+            match self.socket.read(&mut buffer[..]).await {
+                Ok(length) => {
+                    buffer.resize(length, 0);
+                    if buffer.len() > 0 {
+                        let mut data = Cursor::new(buffer.clone());
+                        let length = data.read_varint();
+                        let packet_id = data.read_varint();
+
+                        if buffer.len() > 0 {
+                            let _ = buffer.remove(0);
+                        }
+                        if buffer.len() > 0 {
+                            let _ = buffer.remove(0);
+                        }
+                        buffer.resize(length as usize, 0);
+                        handle_data(self, Direction::SERVERBOUND, packet_id, buffer).await;
+                    }
+                },
+                Err(_) => break,
+            };
+
             let ready = self.socket.ready(Interest::READABLE).await.unwrap();
             if ready.is_read_closed() {
+                debug!("{}: Disconnected", self.address);
                 break;
-            }
-            let length = self.socket.read(&mut buffer[..]).await.unwrap();
-
-            buffer.resize(length, 0);
-            if buffer.len() > 0 {
-                let mut data = Cursor::new(buffer.clone());
-                let length = data.read_varint();
-                let packet_id = data.read_varint();
-
-                if buffer.len() > 0 {
-                    let _ = buffer.remove(0);
-                }
-                if buffer.len() > 0 {
-                    let _ = buffer.remove(0);
-                }
-                buffer.resize(length as usize, 0);
-                PacketIncomingHandler::handle_data(self, packet_id, buffer).await;
             }
         }
     }

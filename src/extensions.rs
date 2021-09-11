@@ -1,6 +1,4 @@
-use std::io::prelude::*;
-use std::io::Cursor;
-use std::str;
+use std::{io::{Cursor, prelude::*}, str};
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub trait CursorExt {

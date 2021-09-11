@@ -1,2 +1,2 @@
-pub mod handler;
-pub mod packets;
+pub mod handshake;
+pub mod status;

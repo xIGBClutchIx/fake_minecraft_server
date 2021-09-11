@@ -16,8 +16,6 @@ signal-hook = "0.3.4"
 async-trait = "0.1.51"
 # Tokio tcp dependency
 tokio = { version = "1", features = ["full"] }
-# Static hashmap dependency
-phf = { version = "0.10.0", features = ["macros"] }
 # Byte dependency
 byteorder = "1"
 # Json dependency
