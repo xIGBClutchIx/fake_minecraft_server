@@ -16,6 +16,7 @@ macro_rules! packet_ids {
        })+
     })+) => {
         pub async fn handle_data(client: &mut SocketClient, packet_direction: Direction, packet_id: i32, buffer: Vec<u8>) {
+            trace!("{}: {:#04x} > {:?}", client.address, packet_id, buffer);
             let cursor = &mut Cursor::new(buffer);
             match client.state {
                 $(State::$stateName => {
@@ -23,9 +24,12 @@ macro_rules! packet_ids {
                         $(Direction::$directionName => {
                             match packet_id {
                                 $(
-                                    $id => $packet::handle(client, cursor).await,
+                                    $id => {
+                                        debug!("{}: {:#04x} > {}", client.address, packet_id, stringify!($packet));
+                                        $packet::handle(client, cursor).await;
+                                    },
                                 )*
-                                _ => panic!("bad packet id 0x{:x} in {:?} {:?}", packet_id, packet_direction, client.state),
+                                _ => panic!("bad packet 0x{:x} in {:?} {:?}", packet_id, packet_direction, client.state),
                             }
                         })*
                     }

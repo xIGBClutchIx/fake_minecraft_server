@@ -14,7 +14,7 @@ use crate::{
 packet_ids!(
     handshake HANDSHAKE {
         serverbound SERVERBOUND {
-            0x01 => PacketHandshake
+            0x00 => PacketHandshake
         }
         clientbound CLIENTBOUND {
         }

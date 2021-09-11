@@ -1,7 +1,6 @@
-use crate::extensions::{CursorExt, Vec8Ext};
+use crate::{packets::packets::handle_data, extensions::{CursorExt, Vec8Ext}};
 
-use crate::packets::packets::handle_data;
-
+use ansi_term::Colour::{Green, Red};
 use serde_json::json;
 use std::{io::Cursor, net::{SocketAddr, SocketAddrV4}};
 use tokio::{io::{AsyncWriteExt, AsyncReadExt, Interest}, net::{TcpStream, TcpListener}};
@@ -23,7 +22,7 @@ impl SocketServer {
             let (socket, address) = listener.accept().await.unwrap();
             tokio::spawn(async move {
                 let mut client = SocketClient::new(address, socket);
-                debug!("{}: Connected", address);
+                info!("{}: {}", address, Green.paint("Connected"));
                 client.handle().await;
             });
         }
@@ -128,7 +127,7 @@ impl SocketClient {
         }
 
         self.socket.write_all(end_data.as_mut()).await.unwrap();
-        info!("{:?} < {}", self.address, packet_name);
+        debug!("{:?} < {}", self.address, packet_name);
     }
 
     pub async fn handle(&mut self) {
@@ -157,7 +156,7 @@ impl SocketClient {
 
             let ready = self.socket.ready(Interest::READABLE).await.unwrap();
             if ready.is_read_closed() {
-                debug!("{}: Disconnected", self.address);
+                info!("{}: {}", self.address, Red.paint("Disconnected"));
                 break;
             }
         }
