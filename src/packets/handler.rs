@@ -29,7 +29,7 @@ macro_rules! packet_ids {
                                         $packet::handle(client, cursor).await;
                                     },
                                 )*
-                                _ => panic!("bad packet 0x{:x} in {:?} {:?}", packet_id, packet_direction, client.state),
+                                _ => error!("{}: {:#04x} > Unknown packet in {:?} {:?}", client.address, packet_id, packet_direction, client.state),
                             }
                         })*
                     }
