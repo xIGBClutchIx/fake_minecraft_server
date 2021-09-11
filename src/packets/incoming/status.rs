@@ -17,8 +17,8 @@ impl PacketIncoming for PacketRequest {
 impl PacketIncoming for PacketPing {
     async fn handle(socket: &mut SocketClient, data: &mut Cursor<Vec<u8>>) {
         let payload = data.read_long();
-        trace!("{}: {} > {:?}", socket.address, "Payload", payload);
+        trace!("{}: (Ping) Payload > {:?}", socket.address, payload);
 
-        socket.send_i64(0x01, "Ping Response", payload).await;
+        socket.send_i64(0x01, "Pong Response", payload).await;
     }
 }

@@ -12,14 +12,15 @@ impl PacketIncoming for PacketHandshake {
         let protocol = data.read_varint();
         let server_address = data.read_string();
         let port = data.read_short();
-        trace!("{}: (Handshake) {} > {:?}", socket.address, "Last State", socket.state);
+        trace!("{}: (Handshake) Last State > {:?}", socket.address, socket.state);
         let state = State::from_u16(data.read_varint());
 
-        trace!("{}: (Handshake) {} > {:?}", socket.address, "Protocol", protocol);
-        trace!("{}: (Handshake) {} > {}", socket.address, "Address", server_address);
-        trace!("{}: (Handshake) {} > {}", socket.address, "Port", port);
-        trace!("{}: (Handshake) {} > {:?}", socket.address, "State", state);
+        trace!("{}: (Handshake) Protocol > {:?}", socket.address, protocol);
+        trace!("{}: (Handshake) Address > {}", socket.address, server_address);
+        trace!("{}: (Handshake) Port > {}", socket.address, port);
+        trace!("{}: (Handshake) State > {:?}", socket.address, state);
         socket.state = state;
+        debug!("{}: {} = {:?}", socket.address, "State", state);
         socket.send_string(0x00, "Handshake Response", ServerStatus::status()).await;
     }
 }

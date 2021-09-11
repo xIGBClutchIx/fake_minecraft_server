@@ -25,7 +25,7 @@ macro_rules! packet_ids {
                             match packet_id {
                                 $(
                                     $id => {
-                                        debug!("{}: {:#04x} > {}", client.address, packet_id, stringify!($packet));
+                                        debug!("{}: ({:?}) {:#04x} > {}", client.address, client.state, packet_id, stringify!($packet));
                                         $packet::handle(client, cursor).await;
                                     },
                                 )*
