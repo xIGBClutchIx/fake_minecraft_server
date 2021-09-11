@@ -16,7 +16,7 @@ macro_rules! packet_ids {
        })+
     })+) => {
         pub async fn handle_data(client: &mut SocketClient, packet_direction: Direction, packet_id: i32, buffer: Vec<u8>) {
-            trace!("{}: {:#04x} > {:?}", client.address, packet_id, buffer);
+            trace!("{}: ({:?}) {:#04x} > {:?}", client.address, client.state, packet_id, buffer);
             let cursor = &mut Cursor::new(buffer);
             match client.state {
                 $(State::$stateName => {
@@ -29,7 +29,7 @@ macro_rules! packet_ids {
                                         $packet::handle(client, cursor).await;
                                     },
                                 )*
-                                _ => error!("{}: {:#04x} > Unknown packet in {:?} {:?}", client.address, packet_id, packet_direction, client.state),
+                                _ => error!("{}: ({:?}) {:#04x} > Unknown packet", client.address, client.state, packet_id),
                             }
                         })*
                     }
