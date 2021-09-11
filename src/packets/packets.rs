@@ -12,31 +12,31 @@ use crate::{
 };
 
 packet_ids!(
-    handshake HANDSHAKE {
-        serverbound SERVERBOUND {
+    HANDSHAKE {
+        SERVERBOUND {
             0x00 => PacketHandshake
         }
-        clientbound CLIENTBOUND {
+        CLIENTBOUND {
         }
     }
-    status STATUS {
-        serverbound SERVERBOUND {
+    STATUS {
+        SERVERBOUND {
             0x00 => PacketRequest
             0x01 => PacketPing
         }
-        clientbound CLIENTBOUND {
+        CLIENTBOUND {
         }
     }
-    login LOGIN {
-        serverbound SERVERBOUND {
+    LOGIN {
+        SERVERBOUND {
         }
-        clientbound CLIENTBOUND {
+        CLIENTBOUND {
         }
     }
-    play PLAY {
-        serverbound SERVERBOUND {
+    PLAY {
+        SERVERBOUND {
         }
-        clientbound CLIENTBOUND {
+        CLIENTBOUND {
         }
     }
 );

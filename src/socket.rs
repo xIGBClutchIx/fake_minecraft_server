@@ -44,7 +44,7 @@ pub enum State {
 }
 
 impl State {
-    pub fn from_u16(value: i32) -> State {
+    pub fn from_i32(value: i32) -> State {
         match value {
             1 => State::STATUS,
             2 => State::LOGIN,

@@ -10,8 +10,8 @@ pub trait PacketIncoming: Sync {
 
 #[macro_export]
 macro_rules! packet_ids {
-    ($($state:ident $stateName:ident {
-       $($direction:ident $directionName:ident {
+    ($($stateName:ident {
+       $($directionName:ident {
            $($id:expr => $packet:ident)*
        })+
     })+) => {
