@@ -4,9 +4,7 @@ use crate::{
     packet_ids,
     packets::{
         handler::PacketIncoming,
-        incoming::{
-            handshake::PacketHandshake, status::{PacketPing, PacketRequest}
-        }
+        incoming::{handshake::*, status::*, login::*, play::*}
     },
     socket::{Direction, SocketClient, State}
 };

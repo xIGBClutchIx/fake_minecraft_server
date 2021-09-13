@@ -13,16 +13,15 @@ impl PacketIncoming for PacketHandshake {
         // Auto print details?
 
         // [0] as i32
-        let protocol = data.read_varint();
+        let protocol = data.read_varint().await;
         // [1] as String
-        let server_address = data.read_string();
+        let server_address = data.read_string().await;
         // [2] as u16
-        let port = data.read_short();
-        trace!("{}: (Handshake) Last State > {:?}", socket.address, socket.state);
+        let port = data.read_short().await;
         // [3] as i32
-        let state = State::from_i32(data.read_varint());
+        let state = State::from_i32(data.read_varint().await);
 
-
+        trace!("{}: (Handshake) Last State > {:?}", socket.address, socket.state);
         trace!("{}: (Handshake) Protocol > {:?}", socket.address, protocol);
         trace!("{}: (Handshake) Address > {}", socket.address, server_address);
         trace!("{}: (Handshake) Port > {}", socket.address, port);

@@ -4,6 +4,7 @@ use ansi_term::Colour::{Green, Red};
 use serde_json::json;
 use std::{io::Cursor, net::{SocketAddr, SocketAddrV4}};
 use tokio::{io::{AsyncWriteExt, AsyncReadExt, Interest}, net::{TcpStream, TcpListener}};
+use crate::extensions::StringExt;
 
 pub struct SocketServer {
     address: SocketAddrV4,
@@ -94,18 +95,12 @@ impl SocketClient {
         }
     }
 
-    pub async fn send_i64(&mut self, packet_id: i32, packet_name: &str, data: i64) {
-        self.send_data(packet_id, packet_name, data.to_ne_bytes().to_vec()).await;
+    pub async fn send_string(&mut self, packet_id: i32, packet_name: &str, mut data: String) {
+        self.send_data(packet_id, packet_name, data.as_vec()).await;
     }
 
-    pub async fn send_string(&mut self, packet_id: i32, packet_name: &str, string: String) {
-        let string_data = string.into_bytes();
-        let mut data: Vec<u8> = Vec::new();
-        // String Size
-        data.add_varint(string_data.len() as i32);
-        // String and size
-        let end_data = [data, string_data].concat();
-        self.send_data(packet_id, packet_name, end_data).await;
+    pub async fn send_i64(&mut self, packet_id: i32, packet_name: &str, data: i64) {
+        self.send_data(packet_id, packet_name, data.to_ne_bytes().to_vec()).await;
     }
 
     pub async fn send_data(&mut self, packet_id: i32, packet_name: &str, response: Vec<u8>) {
@@ -138,8 +133,8 @@ impl SocketClient {
                     buffer.resize(length, 0);
                     if buffer.len() > 0 {
                         let mut data = Cursor::new(buffer.clone());
-                        let length = data.read_varint();
-                        let packet_id = data.read_varint();
+                        let length = data.read_varint().await;
+                        let packet_id = data.read_varint().await;
 
                         if buffer.len() > 0 {
                             let _ = buffer.remove(0);
