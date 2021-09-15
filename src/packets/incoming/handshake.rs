@@ -1,9 +1,8 @@
-use crate::{extensions::*, packets::handler::PacketIncoming, socket::*};
+/*
+use crate::{extensions::*, packets::{handler::PacketIncoming, types::{VarInt, Short}}, socket::*};
 
 use async_trait::async_trait;
 use std::io::Cursor;
-use crate::packets::types::{VarInt, Short};
-
 
 pub struct PacketHandshake;
 
@@ -20,7 +19,7 @@ impl PacketIncoming for PacketHandshake {
         let state = State::from_i32(data.read_varint().await);
 
         trace!("{}: (Handshake) Last State > {:?}", socket.address, socket.state);
-        trace!("{}: (Handshake) Protocol > {:?}", socket.address, protocol);
+        trace!("{}: (Handshake) Protocol > {}", socket.address, protocol);
         trace!("{}: (Handshake) Address > {}", socket.address, server_address);
         trace!("{}: (Handshake) Port > {}", socket.address, port);
         trace!("{}: (Handshake) State > {:?}", socket.address, state);
@@ -30,3 +29,4 @@ impl PacketIncoming for PacketHandshake {
         socket.send_string(0x00, "Handshake Response", ServerStatus::status()).await;
     }
 }
+*/

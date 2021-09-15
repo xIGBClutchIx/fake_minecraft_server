@@ -11,6 +11,13 @@ impl From<i32> for VarInt {
     }
 }
 
+
+impl Display for VarInt {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "{}", self.value)
+    }
+}
+
 #[derive(Debug)]
 pub struct Short {
     value: u16,
@@ -24,17 +31,23 @@ impl From<u16> for Short {
 
 impl Display for Short {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.value)
     }
 }
 
 #[derive(Debug)]
 pub struct Long {
-    value: u16,
+    pub value: i64,
 }
 
-impl From<u16> for Long {
-    fn from(item: u16) -> Self {
+impl From<i64> for Long {
+    fn from(item: i64) -> Self {
         Long { value: item }
+    }
+}
+
+impl Display for Long {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "{}", self.value)
     }
 }
