@@ -3,8 +3,7 @@ use std::io::Cursor;
 use crate::{
     packet_ids,
     packets::{
-        handler::PacketIncoming,
-        incoming::{handshake::*, status::*, login::*, play::*}
+        handler::PacketIncoming
     },
     socket::{Direction, SocketClient, State}
 };
@@ -12,29 +11,21 @@ use crate::{
 packet_ids!(
     HANDSHAKE {
         SERVERBOUND {
-            0x00 => PacketHandshake
+            0x00 => PacketHandshake {
+                protocol: i32,
+                server_address: String,
+                port: u16,
+                state: i32,
+            }
         }
         CLIENTBOUND {
         }
     }
     STATUS {
         SERVERBOUND {
-            0x00 => PacketRequest
-            0x01 => PacketPing
-        }
-        CLIENTBOUND {
-        }
-    }
-    LOGIN {
-        SERVERBOUND {
-        }
-        CLIENTBOUND {
-        }
-    }
-    PLAY {
-        SERVERBOUND {
-        }
-        CLIENTBOUND {
+            0x00 => PacketRequest {
+            }
         }
     }
 );
+

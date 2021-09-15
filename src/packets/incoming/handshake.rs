@@ -3,6 +3,7 @@ use crate::{extensions::*, packets::handler::PacketIncoming, socket::*};
 use async_trait::async_trait;
 use std::io::Cursor;
 
+/*
 pub struct PacketHandshake;
 
 #[async_trait]
@@ -32,3 +33,4 @@ impl PacketIncoming for PacketHandshake {
         socket.send_string(0x00, "Handshake Response", ServerStatus::status()).await;
     }
 }
+*/

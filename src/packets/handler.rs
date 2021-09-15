@@ -11,30 +11,28 @@ pub trait PacketIncoming: Sync {
 #[macro_export]
 macro_rules! packet_ids {
     ($($stateName:ident {
-       $($directionName:ident {
-           $($id:expr => $packet:ident)*
-       })+
+        $($directionName:ident {
+            $($id:expr => $name:ident {
+                $($field:ident: $field_type:ty, )*
+            })*
+        })+
     })+) => {
-        pub async fn handle_data(client: &mut SocketClient, packet_direction: Direction, packet_id: i32, buffer: Vec<u8>) {
-            trace!("{}: ({:?}) {:#04x} > {:?}", client.address, client.state, packet_id, buffer);
-            let cursor = &mut Cursor::new(buffer);
-            match client.state {
-                $(State::$stateName => {
-                    match packet_direction {
-                        $(Direction::$directionName => {
-                            match packet_id {
-                                $(
-                                    $id => {
-                                        debug!("{}: ({:?}) {:#04x} > {}", client.address, client.state, packet_id, stringify!($packet));
-                                        $packet::handle(client, cursor).await;
-                                    },
-                                )*
-                                _ => error!("{}: ({:?}) {:#04x} > Unknown packet", client.address, client.state, packet_id),
-                            }
-                        })*
+        $(
+            $(
+                $(
+                    #[derive(Debug)]
+                    pub struct $name {
+                        $($field: $field_type),*
                     }
-                })*
-            }
-        }
+
+                    #[async_trait::async_trait]
+                    impl PacketIncoming for $name {
+                        async fn handle(socket: &mut SocketClient, data: &mut Cursor<Vec<u8>>) {
+
+                        }
+                    }
+                )*
+            )+
+        )+
     }
 }

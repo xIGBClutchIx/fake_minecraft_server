@@ -1,4 +1,4 @@
-use crate::{packets::packets::handle_data, extensions::{CursorExt, Vec8Ext}};
+use crate::{extensions::{CursorExt, Vec8Ext}};
 
 use ansi_term::Colour::{Green, Red};
 use serde_json::json;
@@ -30,13 +30,13 @@ impl SocketServer {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Debug)]
 pub enum Direction {
     SERVERBOUND,
     CLIENTBOUND,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Debug)]
 pub enum State {
     HANDSHAKE,
     STATUS,
@@ -143,7 +143,7 @@ impl SocketClient {
                             let _ = buffer.remove(0);
                         }
                         buffer.resize(length as usize, 0);
-                        handle_data(self, Direction::SERVERBOUND, packet_id, buffer).await;
+                        //handle_data(self, Direction::SERVERBOUND, packet_id, buffer).await;
                     }
                 },
                 Err(_) => break,
