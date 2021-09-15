@@ -7,15 +7,16 @@ use crate::{
     },
     socket::{Direction, SocketClient, State}
 };
+use crate::packets::types::{Short, VarInt};
 
 packet_ids!(
     HANDSHAKE {
         SERVERBOUND {
             0x00 => PacketHandshake {
-                protocol: i32,
+                protocol: VarInt,
                 server_address: String,
-                port: u16,
-                state: i32,
+                port: Short,
+                state: State,
             }
         }
         CLIENTBOUND {
