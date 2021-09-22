@@ -1,10 +1,9 @@
-use crate::{extensions::{CursorExt, Vec8Ext}};
+use crate::{extensions::{CursorExt, StringExt, Vec8Ext}, packets::{handle_data, types::Long}};
 
 use ansi_term::Colour::{Green, Red};
 use serde_json::json;
 use std::{io::Cursor, net::{SocketAddr, SocketAddrV4}};
 use tokio::{io::{AsyncWriteExt, AsyncReadExt, Interest}, net::{TcpStream, TcpListener}};
-use crate::extensions::StringExt;
 
 pub struct SocketServer {
     address: SocketAddrV4,
@@ -30,13 +29,14 @@ impl SocketServer {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum Direction {
     SERVERBOUND,
     CLIENTBOUND,
 }
 
-#[derive(Debug)]
+
+#[derive(Clone, Copy, Debug)]
 pub enum State {
     HANDSHAKE,
     STATUS,
@@ -47,6 +47,7 @@ pub enum State {
 impl State {
     pub fn from_i32(value: i32) -> State {
         match value {
+            0 => State::HANDSHAKE,
             1 => State::STATUS,
             2 => State::LOGIN,
             3 => State::PLAY,
@@ -99,8 +100,8 @@ impl SocketClient {
         self.send_data(packet_id, packet_name, data.as_vec()).await;
     }
 
-    pub async fn send_i64(&mut self, packet_id: i32, packet_name: &str, data: i64) {
-        self.send_data(packet_id, packet_name, data.to_ne_bytes().to_vec()).await;
+    pub async fn send_long(&mut self, packet_id: i32, packet_name: &str, data: Long) {
+        self.send_data(packet_id, packet_name, data.value.to_ne_bytes().to_vec()).await;
     }
 
     pub async fn send_data(&mut self, packet_id: i32, packet_name: &str, response: Vec<u8>) {
@@ -143,7 +144,7 @@ impl SocketClient {
                             let _ = buffer.remove(0);
                         }
                         buffer.resize(length as usize, 0);
-                        //handle_data(self, Direction::SERVERBOUND, packet_id, buffer).await;
+                        handle_data(self, Direction::SERVERBOUND, packet_id, buffer).await;
                     }
                 },
                 Err(_) => break,

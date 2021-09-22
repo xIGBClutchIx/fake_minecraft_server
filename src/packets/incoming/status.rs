@@ -1,26 +1,19 @@
-/*
-use crate::{extensions::*, packets::handler::PacketIncoming, socket::*};
+use crate::{packets::{handler::PacketIncoming, *}, socket::*};
 
 use async_trait::async_trait;
-use std::io::Cursor;
-
-pub struct PacketRequest;
-pub struct PacketPing;
 
 #[async_trait]
 impl PacketIncoming for PacketRequest {
-    async fn handle(socket: &mut SocketClient, _data: &mut Cursor<Vec<u8>>) {
+    async fn handle(&self, socket: &mut SocketClient) {
         socket.send_string(0x00, "Status Response", ServerStatus::status()).await;
     }
 }
 
 #[async_trait]
 impl PacketIncoming for PacketPing {
-    async fn handle(socket: &mut SocketClient, data: &mut Cursor<Vec<u8>>) {
-        let payload = data.read_long().await;
-        trace!("{}: (Ping) Payload > {}", socket.address, payload);
+    async fn handle(&self, socket: &mut SocketClient) {
+        trace!("{}: (Ping) Payload > {}", socket.address, self.payload);
 
-        socket.send_i64(0x01, "Pong Response", payload).await;
+        socket.send_long(0x01, "Pong Response", self.payload).await;
     }
 }
-*/

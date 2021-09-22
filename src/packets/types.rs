@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter, Result};
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct VarInt {
     value: i32,
 }
@@ -18,7 +18,7 @@ impl Display for VarInt {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Short {
     value: u16,
 }
@@ -35,7 +35,7 @@ impl Display for Short {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Long {
     pub value: i64,
 }
