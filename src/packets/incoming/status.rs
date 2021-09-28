@@ -5,7 +5,7 @@ use async_trait::async_trait;
 #[async_trait]
 impl PacketIncoming for PacketRequest {
     async fn handle(&self, socket: &mut SocketClient) {
-        socket.send_string(0x00, "Status Response", ServerStatus::status()).await;
+        socket.send_status(0x00, "Status Response", ServerStatus::status()).await;
     }
 }
 

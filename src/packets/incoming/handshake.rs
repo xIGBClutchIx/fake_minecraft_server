@@ -10,6 +10,6 @@ impl PacketIncoming for PacketHandshake {
         socket.state = self.state;
         trace!("{}: New State = {:?}", socket.address, self.state);
 
-        socket.send_string(0x00, "Handshake Response", ServerStatus::status()).await;
+        socket.send_status(0x00, "Handshake Response", ServerStatus::status()).await;
     }
 }

@@ -1,6 +1,7 @@
 pub mod incoming;
 pub mod handler;
 pub mod types;
+pub mod server_status;
 
 use crate::{packet_ids, packets::{handler::{PacketIncoming, get_field}, types::*}, socket::{Direction, State, SocketClient}};
 

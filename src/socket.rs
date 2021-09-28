@@ -1,7 +1,6 @@
-use crate::{extensions::{CursorExt, StringExt, Vec8Ext}, packets::{handle_data, types::Long}};
+use crate::{extensions::{CursorExt, StringExt, Vec8Ext}, packets::{handle_data, server_status::{Status, StatusVersion, StatusPlayers, StatusPlayer, StatusDescription}, types::Long}};
 
 use ansi_term::Colour::{Green, Red};
-use serde_json::json;
 use std::{io::Cursor, net::{SocketAddr, SocketAddrV4}};
 use tokio::{io::{AsyncWriteExt, AsyncReadExt, Interest}, net::{TcpStream, TcpListener}};
 
@@ -59,24 +58,24 @@ impl State {
 pub struct ServerStatus;
 
 impl ServerStatus {
-    pub fn status() -> String {
-         return json!({
-            "version": {
-                "name": "1.17.1",
-                "protocol": 756
+    pub fn status() -> Status {
+        return Status {
+            version: StatusVersion {
+                name: "1.17.1".to_string(),
+                protocol: 756
             },
-            "players": {
-                "max": 64,
-                "online": 1,
-                "sample": [{
-                    "name": "Clutch",
-                    "id": "2a8e267f-88d7-4175-8825-00e81a680076"
+            players: StatusPlayers {
+                max: 64,
+                online: 1,
+                sample: vec![StatusPlayer {
+                    name: "Clutch".to_string(),
+                    id: "2a8e267f-88d7-4175-8825-00e81a680076".to_string()
                 }]
             },
-            "description": {
-                "text": "A Fake Minecraft Server"
+            description: StatusDescription {
+                text: "A Fake Minecraft Server".to_string()
             }
-        }).to_string();
+        };
     }
 }
 
@@ -96,8 +95,8 @@ impl SocketClient {
         }
     }
 
-    pub async fn send_string(&mut self, packet_id: i32, packet_name: &str, mut data: String) {
-        self.send_data(packet_id, packet_name, data.as_vec()).await;
+    pub async fn send_status(&mut self, packet_id: i32, packet_name: &str, status: Status) {
+        self.send_data(packet_id, packet_name, serde_json::to_string(&status).unwrap().as_vec()).await;
     }
 
     pub async fn send_long(&mut self, packet_id: i32, packet_name: &str, data: Long) {
