@@ -1,4 +1,4 @@
-use crate::{extensions::{CursorExt, StringExt, Vec8Ext}, packets::{handle_data, server_status::{Status, StatusVersion, StatusPlayers, StatusPlayer, StatusDescription}, types::Long}};
+use crate::{extensions::{CursorExt, Vec8Ext}, packets::serverbound::handle_serverbound_data};
 
 use ansi_term::Colour::{Green, Red};
 use std::{io::Cursor, net::{SocketAddr, SocketAddrV4}};
@@ -29,13 +29,6 @@ impl SocketServer {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum Direction {
-    SERVERBOUND,
-    CLIENTBOUND,
-}
-
-
-#[derive(Clone, Copy, Debug)]
 pub enum State {
     HANDSHAKE,
     STATUS,
@@ -55,30 +48,6 @@ impl State {
     }
 }
 
-pub struct ServerStatus;
-
-impl ServerStatus {
-    pub fn status() -> Status {
-        return Status {
-            version: StatusVersion {
-                name: "1.17.1".to_string(),
-                protocol: 756
-            },
-            players: StatusPlayers {
-                max: 64,
-                online: 1,
-                sample: vec![StatusPlayer {
-                    name: "Clutch".to_string(),
-                    id: "2a8e267f-88d7-4175-8825-00e81a680076".to_string()
-                }]
-            },
-            description: StatusDescription {
-                text: "A Fake Minecraft Server".to_string()
-            }
-        };
-    }
-}
-
 pub struct SocketClient {
     pub address: SocketAddr,
     socket: TcpStream,
@@ -95,15 +64,7 @@ impl SocketClient {
         }
     }
 
-    pub async fn send_status(&mut self, packet_id: i32, packet_name: &str, status: Status) {
-        self.send_data(packet_id, packet_name, serde_json::to_string(&status).unwrap().as_vec()).await;
-    }
-
-    pub async fn send_long(&mut self, packet_id: i32, packet_name: &str, data: Long) {
-        self.send_data(packet_id, packet_name, data.value.to_ne_bytes().to_vec()).await;
-    }
-
-    pub async fn send_data(&mut self, packet_id: i32, packet_name: &str, response: Vec<u8>) {
+    pub async fn send_data(&mut self, packet_id: i32, packet_name: String, response: Vec<u8>) {
         // Packet ID + String Size + Data
         let mut data: Vec<u8> = Vec::new();
         // Packet ID
@@ -122,7 +83,7 @@ impl SocketClient {
         }
 
         self.socket.write_all(end_data.as_mut()).await.unwrap();
-        debug!("{:?} < {}", self.address, packet_name);
+        debug!("{:?} < {}", self.address, packet_name.replace("fake_minecraft_server::packets::clientbound::Packet", ""));
     }
 
     pub async fn handle(&mut self) {
@@ -143,7 +104,7 @@ impl SocketClient {
                             let _ = buffer.remove(0);
                         }
                         buffer.resize(length as usize, 0);
-                        handle_data(self, Direction::SERVERBOUND, packet_id, buffer).await;
+                        handle_serverbound_data(self, packet_id, buffer).await;
                     }
                 },
                 Err(_) => break,

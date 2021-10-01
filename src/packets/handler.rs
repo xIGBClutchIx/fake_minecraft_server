@@ -1,59 +1,88 @@
 use crate::{extensions::CursorExt, socket::{SocketClient, State}, packets::types::{Long, Short, VarInt}};
 
 use async_trait::async_trait;
-use std::{any::Any, io::Cursor, net::SocketAddr};
+use std::{any::{Any}, io::Cursor, net::SocketAddr};
+
 
 #[async_trait]
-pub trait PacketIncoming: Sync {
+pub trait PacketServerbound: Sync {
     async fn handle(&self, _socket: &mut SocketClient) {}
 }
 
+#[async_trait]
+pub trait PacketClientbound: Sync {
+
+    fn get_data(&self, socket: &mut SocketClient) -> Vec<u8>;
+
+    // TODO: Put packet id somehow on struct?!?
+    async fn send(&self, id: i32, socket: &mut SocketClient) {
+        let data = self.get_data(socket);
+        socket.send_data(id, print_type_of(self), data).await;
+    }
+}
+
+fn print_type_of<T: ?Sized>(_: &T) -> String {
+    return format!("{}", std::any::type_name::<T>());
+}
+
 #[macro_export]
-macro_rules! packet_ids {
+macro_rules! serverbound_packets {
     ($($stateName:ident {
-        $($directionName:ident {
-            $($id:expr => $name:ident {
-                $($field_name:ident: $field_type:ty, )*
-            })*
-        })+
+        $($id:expr => $name:ident {
+            $($field_name:ident: $field_type:ty, )*
+        })*
     })+) => {
         $(
             $(
-                $(
-                    #[derive(Debug)]
-                    pub struct $name {
-                        $(
-                            pub $field_name: $field_type,
-                        )*
-                    }
-                )*
-            )+
+                #[derive(Debug)]
+                pub struct $name {
+                    $(
+                        pub $field_name: $field_type,
+                    )*
+                }
+            )*
         )+
 
-        pub async fn handle_data(client: &mut SocketClient, packet_direction: Direction, packet_id: i32, buffer: Vec<u8>) {
-            trace!("{}: ({:?}) {:#04x} > {:?}", client.address, client.state, packet_id, buffer);
+        pub async fn handle_serverbound_data(client: &mut SocketClient, packet_id: i32, buffer: Vec<u8>) {
+            trace!("{} > ({:?}) {:#04x}: {:?}", client.address, client.state, packet_id, buffer);
             let cursor = &mut Cursor::new(buffer);
             match client.state {
                 $(State::$stateName => {
-                    match packet_direction {
-                        $(Direction::$directionName => {
-                            match packet_id {
-                                $($id => {
-                                    debug!("{}: ({:?}) {:#04x} > {}", client.address, client.state, packet_id, stringify!($name));
-                                    let packet = $name {
-                                        $($field_name : get_field::<$field_type>(stringify!($field_type), client.address, cursor).await.downcast_ref::<$field_type>().unwrap().clone()),*
-                                    };
-                                    packet.handle(client).await;
-                                },)*
-                                _ => error!("{}: ({:?}) {:#04x} > Unknown packet", client.address, client.state, packet_id),
-                            }
-                        })*
-                        _ => error!("{}: ({:?}) {:#04x} > Unknown packet direction", client.address, client.state, packet_id),
+                    match packet_id {
+                        $($id => {
+                            debug!("{} > ({:?}) {:#04x}: {}", client.address, client.state, packet_id, stringify!($name).replace("Packet", ""));
+                            let packet = $name {
+                                $($field_name : get_field::<$field_type>(stringify!($field_type), client.address, cursor).await.downcast_ref::<$field_type>().unwrap().clone()),*
+                            };
+                            packet.handle(client).await;
+                        },)*
+                        _ => error!("{} > ({:?}) {:#04x}: Unknown packet", client.address, client.state, packet_id),
                     }
                 })*
-                _ => error!("{}: ({:?}) {:#04x} > Unknown packet state", client.address, client.state, packet_id),
+                _ => error!("{} > ({:?}) {:#04x}: Unknown packet state", client.address, client.state, packet_id),
             }
         }
+    }
+}
+
+#[macro_export]
+macro_rules! clientbound_packets {
+    ($($stateName:ident {
+        $($id:expr => $name:ident {
+            $($field_name:ident: $field_type:ty, )*
+        })*
+    })+) => {
+        $(
+            $(
+                #[derive(Debug)]
+                pub struct $name {
+
+                    $(
+                        pub $field_name: $field_type,
+                    )*
+                }
+            )*
+        )+
     }
 }
 
